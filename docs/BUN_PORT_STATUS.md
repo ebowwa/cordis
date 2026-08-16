@@ -109,6 +109,9 @@ None.
 - `06ae971` — Phase 0–3: Bun behavioral suite + plan/status docs + loader
   devDependency fix
 - `a8499bd` — Phase 4–5: entrypoints, supervisor, CI, compatibility docs
+- `e3cc3f9` — docs: phase 4–5 status recording
+- `f98c663` — Phase 6: benchmarks, memory/CPU profiles, fork-vs-upstream
+  control comparison (docs/BUN_BENCH.md)
 
 Branch: `feat/bun-compat` (2 commits ahead of `8cc9e33` == `upstream/main`;
 push/PR is owner-gated).
