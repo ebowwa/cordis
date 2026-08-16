@@ -14,6 +14,9 @@
     "yakumo": "node --expose-internals --import tsx --import @cordisjs/unyaml node_modules/yakumo/lib/cli.js",
     "build": "yarn yakumo esbuild && yarn yakumo tsc",
     "test": "yarn yakumo vitest --import tsx",
+    "test:bun": "bun test tests/bun",
+    "start:bun": "bun packages/core/bin.bun.js",
+    "dev:bun": "bun packages/core/bin.bun.watch.js",
     "test:text": "shx rm -rf coverage && yarn test --coverage --coverage.reporter text",
     "test:json": "shx rm -rf coverage && yarn test --coverage --coverage.reporter json",
     "test:html": "shx rm -rf coverage && yarn test --coverage --coverage.reporter html"

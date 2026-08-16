@@ -1,0 +1,54 @@
+name: Bun
+
+# Bun-native verification alongside the existing Node toolchain (build.yml is
+# intentionally untouched to preserve the upstream merge path).
+#
+# Pinned Bun: 1.3.14 (revision 1.3.14+0d9b296af) — the release this port is
+# verified against. Update the pin only together with docs/BUN_COMPATIBILITY.md.
+
+on:
+  push:
+    branches: [main, feat/bun-compat]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        bun-version: ['1.3.14']
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ matrix.bun-version }}
+
+      - name: Install (bun)
+        run: bun install
+
+      - name: Build (node + yakumo)
+        run: |-
+          node --expose-internals --import tsx --import @cordisjs/unyaml \
+            node_modules/yakumo/lib/cli.js esbuild
+          node --expose-internals --import tsx --import @cordisjs/unyaml \
+            node_modules/yakumo/lib/cli.js tsc
+
+      - name: Bun behavioral suite
+        run: bun test tests/bun
+
+      - name: Node suite stays green alongside
+        run: |-
+          node --expose-internals --import tsx --import @cordisjs/unyaml \
+            node_modules/yakumo/lib/cli.js vitest --import tsx
