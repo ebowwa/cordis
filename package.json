@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@cordisjs/eslint-config": "^1.1.1",
+    "@cordisjs/plugin-include": "^1.0.4",
     "@cordisjs/plugin-loader": "^1.0.0-rc.5",
     "@cordisjs/plugin-timer": "^1.1.2",
     "@cordisjs/unyaml": "^2.0.3",

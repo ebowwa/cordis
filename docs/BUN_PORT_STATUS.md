@@ -93,6 +93,26 @@ under Bun's isolated linker (under Yarn hoisting this is a no-op).
 
 Reproduce: see the command block at the top of `docs/BUN_BENCH.md`.
 
+## CI incident & fix (post-PR #1)
+
+PR #1 CI failed on both the `build` (yarn) job and the Bun job:
+`yakumo-tsc` aborted with **"circular dependency detected"** — the
+`@cordisjs/plugin-include` devDependency I had added to
+`packages/loader/package.json` introduced a
+`plugin-loader → plugin-include → plugin-loader` cycle in yakumo's build
+graph (include peer-depends on loader). Process miss: after that edit I
+re-ran the test suites but not the yakumo build.
+
+Fix: `packages/loader/package.json` reverted to **upstream-identical**; the
+dependency moved to the **root** `package.json` devDependencies (module
+resolution from `packages/loader` walks up to root `node_modules`; the root
+is outside yakumo's package graph, so no cycle). Re-verified locally in
+order: yakumo esbuild (exit 0), yakumo tsc (exit 0), `bun test tests/bun`
+58/58, Node suite 163/163.
+
+Lesson recorded: **run the full build, not only the suites, after any
+dependency-graph change.**
+
 ## Current failures
 
 None.

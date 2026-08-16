@@ -38,9 +38,10 @@ Notes on the matrix:
   (864 packages) and per-package workspace linking.
 - "build" is the shared yakumo esbuild+tsc pipeline executed under Node;
   building under Bun's bundler is neither required nor claimed.
-- `@cordisjs/plugin-loader` needed one **devDependency addition**
-  (`@cordisjs/plugin-include`) — see "Cordis changes" below. This is an
-  install-layout issue, not a Bun defect.
+- `@cordisjs/plugin-loader` needed a resolution fix for Bun's isolated
+  workspace linking — solved at the **repo root**, not in the loader package
+  (see "Cordis changes" below). This is an install-layout issue, not a Bun
+  defect.
 
 ## What is verified (behavioral, under `bun test tests/bun`)
 
@@ -200,12 +201,18 @@ recorded because they surprised the port itself:
 
 **Cordis-side (this fork, branch `feat/bun-compat`):**
 
-1. `packages/loader/package.json`: added `@cordisjs/plugin-include` to
-   `devDependencies` (mirrors existing `@cordisjs/plugin-logger-console`
-   entry). Under Bun's isolated workspace `node_modules`, the loader's
-   fallback `import('@cordisjs/plugin-include')` executes from
-   `packages/loader` where that package was not previously visible. Under
-   Yarn hoisting this worked by accident. No runtime code changed.
+1. Root `package.json`: added `@cordisjs/plugin-include` (plus `cordis`,
+   `@cordisjs/plugin-loader`, `@cordisjs/plugin-timer` for `bench/`) to
+   `devDependencies`. Under Bun's isolated workspace `node_modules`, the
+   loader's fallback `import('@cordisjs/plugin-include')` executes from
+   `packages/loader`; with the package declared at the repo root it resolves
+   via the parent-directory walk-up (root `node_modules`). Under Yarn
+   hoisting this is a no-op.
+   **Note:** declaring it inside `packages/loader/package.json` instead
+   would create a `plugin-loader → plugin-include → plugin-loader` cycle in
+   yakumo-tsc's build graph (`Error: circular dependency detected`) —
+   deliberately avoided; `packages/loader/package.json` stays
+   upstream-identical.
 2. `packages/core/bin.bun.js`, `packages/core/bin.bun.watch.js`: Bun
    entrypoint + development supervisor (additive; not in the published
    `files` list; Node's `bin.js` untouched).
