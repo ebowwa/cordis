@@ -173,6 +173,10 @@ None.
 - `e3cc3f9` — docs: phase 4–5 status recording
 - `f98c663` — Phase 6: benchmarks, memory/CPU profiles, fork-vs-upstream
   control comparison (docs/BUN_BENCH.md)
+- `10b2df7` — fix(ci): move plugin-include devDependency to root (post-PR #1)
+- `fdfe2e9` — Phase 7: oven-sh/bun#32856 integration (hot.spec.ts,
+  bin.bun.js import.meta.hot.dispose, corrected --watch/--hot docs, CI
+  best-effort PR install, repros)
 
 Branch: `feat/bun-compat` (2 commits ahead of `8cc9e33` == `upstream/main`;
 push/PR is owner-gated).
