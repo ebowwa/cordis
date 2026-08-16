@@ -8,6 +8,9 @@ classified below.
 - Verified Node releases: v26.4.0 (locally), v24/v26 (upstream CI unchanged)
 - Behavioral proof: `bun test tests/bun` — 58 tests across 11 spec files
   covering the scenarios listed in "What is verified" below.
+- Performance proof: see **`docs/BUN_BENCH.md`** — fork ≡ upstream under
+  Node (control), and Bun is faster on every Cordis operation (up to ~5x
+  plugin lifecycle, ~4x config boot, ~80x TS module eval).
 - Compatibility is **not** claimed from installation or typechecking alone;
   every claim below maps to an executable test or a recorded command.
 

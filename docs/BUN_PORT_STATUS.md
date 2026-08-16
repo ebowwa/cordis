@@ -59,6 +59,40 @@ bun test tests/bun                  # 58 pass / 0 fail / 198 expect() calls
 node ... yakumo vitest --import tsx # 19 files / 163 tests passed (see run log)
 ```
 
+### Phase 6 — benchmark & profile comparison vs the original (DONE)
+
+Motivation: owner asked whether we had profiled/benchmarked against the
+original. Answer had been no (behavioral verification only); this phase adds
+`bench/` + `docs/BUN_BENCH.md`.
+
+What was measured (2 full passes each; ranges in the doc):
+
+- **Control — fork vs upstream** (`cordiverse/cordis@8cc9e33` in a git
+  worktree, built + run identically under Node): statistically
+  indistinguishable; alternating A/B on the noisiest workload showed
+  overlapping ranges (fork 735–849 vs upstream 690–741 µs/op). Expected:
+  zero runtime-source changes.
+- **Node vs Bun (fork)**: Bun faster on every Cordis operation —
+  context/plugin/effects machinery ~5x, timers ~3x, loader tree updates
+  ~2.4x, Include boot ~4x, fresh TS module eval ~80x (tsx RPC vs native
+  transpile). Timer-settle-dominated workloads (async effects, inject
+  cycles) are runtime-neutral (macOS `setTimeout(0)` floor).
+- **Cold start**: Cordis core boot ≈23 ms on Node vs ≈22 ms on Bun (parity);
+  Node's TS penalty (~400 ms) is entirely the tsx toolchain.
+- **Memory**: 600 load/dispose cycles — registry empty, no leftover
+  listeners/timers on either runtime (heap growth: node +5.2 MB, bun
+  +0.3 MB; rss accounting differs between V8/JSC).
+- **CPU profiles** (`--cpu-prof` both runtimes): top Cordis-internal
+  hotspot is `packages/core/src/reflect.ts` proxy machinery on BOTH
+  runtimes — shared optimization target, not a Bun issue.
+
+Cordis change required by benching (additive): root `package.json` gained
+`cordis`, `@cordisjs/plugin-loader`, `@cordisjs/plugin-timer` in
+`devDependencies` so root-level bench files resolve workspace packages
+under Bun's isolated linker (under Yarn hoisting this is a no-op).
+
+Reproduce: see the command block at the top of `docs/BUN_BENCH.md`.
+
 ## Current failures
 
 None.
