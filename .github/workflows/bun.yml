@@ -48,6 +48,17 @@ jobs:
       - name: Bun behavioral suite
         run: bun test tests/bun
 
+      # Downstream integration fixture for oven-sh/bun#32856
+      # (import.meta.hot for bun --hot). Install is best-effort: PR artifact
+      # availability varies, and tests/bun/hot.spec.ts skips cleanly when the
+      # binary is absent — but a real failure in it fails CI.
+      - name: Install bun#32856 PR build (best effort)
+        run: bunx bun-pr 32856
+        continue-on-error: true
+
+      - name: bun#32856 integration suite
+        run: bun test tests/bun/hot.spec.ts
+
       - name: Node suite stays green alongside
         run: |-
           node --expose-internals --import tsx --import @cordisjs/unyaml \
