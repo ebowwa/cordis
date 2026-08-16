@@ -74,4 +74,7 @@ None.
 
 - `06ae971` — Phase 0–3: Bun behavioral suite + plan/status docs + loader
   devDependency fix
-- (pending) — Phase 4–5: entrypoints, supervisor, CI, compatibility docs
+- `a8499bd` — Phase 4–5: entrypoints, supervisor, CI, compatibility docs
+
+Branch: `feat/bun-compat` (2 commits ahead of `8cc9e33` == `upstream/main`;
+push/PR is owner-gated).
