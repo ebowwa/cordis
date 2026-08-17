@@ -139,8 +139,14 @@ Delivered (in `.upstream/bun`, locally excluded; fork `ebowwa/bun`):
   changed code — already correct; guard test added), while
   `import.meta.resolveSync` routes through `Bun__resolveSync` and HAD the
   same dropped query — now covered and fixed by the same change.
-  20/20 in the file; reply posted on the PR. Buildkite matrix pending at
-  last check (no `bk` CLI/token locally; GitHub status is the signal).
+  20/20 in the file; reply posted on the PR.
+- CI state (2026-08-17 ~16:00Z): build 99960 (first commit) ran ~6h then
+  was auto-superseded (`cancel_reason: build_skipping`) when build 100030
+  dispatched for `c16333e9`. Build 100030 is **`blocked`** — Buildkite's
+  approval gate for fork/first-time contributors; a maintainer must
+  approve CI to run. No test failures anywhere; GitHub statuses remain
+  "pending" until the gate clears. Monitoring signal: the PR's
+  buildkite/bun badge, or `builds/100030.json` (public, unauthenticated).
 
 ### Full-suite phase boundary results
 
