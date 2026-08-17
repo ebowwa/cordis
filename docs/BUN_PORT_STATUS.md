@@ -133,6 +133,14 @@ Delivered (in `.upstream/bun`, locally excluded; fork `ebowwa/bun`):
   requirement.
 - **Open as [oven-sh/bun#39426](https://github.com/oven-sh/bun/pull/39426)**
   (owner-approved), Fixes #21346.
+- Post-open review follow-up (`c16333e9`): CodeRabbit flagged missing
+  `import.meta.resolve` coverage. Investigation showed
+  `import.meta.resolve` handles `file://` via URL joining (never hits the
+  changed code — already correct; guard test added), while
+  `import.meta.resolveSync` routes through `Bun__resolveSync` and HAD the
+  same dropped query — now covered and fixed by the same change.
+  20/20 in the file; reply posted on the PR. Buildkite matrix pending at
+  last check (no `bk` CLI/token locally; GitHub status is the signal).
 
 ### Full-suite phase boundary results
 
