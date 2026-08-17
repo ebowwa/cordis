@@ -35,7 +35,9 @@ const REPO_ROOT = resolve(fileURLToPath(new URL('../../', import.meta.url)))
 const DRIVER = fileURLToPath(new URL('./fixtures/selective-reload-driver.ts', import.meta.url))
 
 function candidateBin(): string | undefined {
-  if (process.env.BUN_QUERY_BUSTING_BIN) return process.env.BUN_QUERY_BUSTING_BIN
+  // resolved to an absolute path: the driver child process runs with a
+  // temp cwd, so a relative binary path would not resolve from there
+  if (process.env.BUN_QUERY_BUSTING_BIN) return resolve(process.env.BUN_QUERY_BUSTING_BIN)
   for (const rel of ['build/release/bun', 'build/debug/bun-debug']) {
     const local = join(REPO_ROOT, '.upstream/bun', rel)
     if (existsSync(local)) return local
