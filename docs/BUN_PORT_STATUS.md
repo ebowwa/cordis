@@ -233,6 +233,12 @@ done.
   `57b1e6ba…bdd099e`, `--revision` reports our commit. Docs record the
   checksum and rebuild command, so the artifact is verifiable AND
   reproducible independent of this machine.
+- Release referenced on both Bun PRs (owner-approved): full artifact
+  note (download, checksum, usage, caveats) on
+  [#39426](https://github.com/oven-sh/bun/pull/39426#issuecomment-5318617337);
+  short validation pointer on
+  [#35601](https://github.com/oven-sh/bun/pull/35601#issuecomment-5318617517)
+  (framed as "testable binary for this direction", not our PR).
 
 ## Current failures
 
