@@ -182,6 +182,14 @@ Delivered (in `.upstream/bun`, locally excluded; fork `ebowwa/bun`):
     remains here. Our value-adds stand as: fresh-on-main implementation
     (#39426), downstream validation + capability-gated matrix (posted on
     both PRs), and Cordis PR #2 which activates on whichever lands.
+  - Neighborhood map posted publicly (owner-approved): full version on
+    [#39426](https://github.com/oven-sh/bun/pull/39426#issuecomment-5318438990)
+    (four PRs' relationships + history + the #35345 lcov prediction),
+    trimmed version on
+    [#35601](https://github.com/oven-sh/bun/pull/35601#issuecomment-5318445162)
+    framed as downstream-shared context. The #35345 note is the
+    forward-looking piece: neither query PR mentions that landing either
+    makes the lcov re-import bug reachable via file:// cache-busting.
 - #35601 detail (original finding, owner-requested, 2026-08-17 ~19:30Z):
   robobun's earlier PR (Jul 25) fixing the SAME bug: identical root-cause
   diagnosis, same three sites, PLUS BunPlugin.cpp / mock.module via a
