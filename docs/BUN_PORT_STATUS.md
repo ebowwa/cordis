@@ -177,6 +177,10 @@ None.
 - `fdfe2e9` — Phase 7: oven-sh/bun#32856 integration (hot.spec.ts,
   bin.bun.js import.meta.hot.dispose, corrected --watch/--hot docs, CI
   best-effort PR install, repros)
+- `a46f378` — docs: phase 7 commit SHA record
+- `c678d87` — docs: finish --watch/--hot correction (bin.bun.watch.js
+  header, watch-timer-disposers.ts SIGINT comment); hot.spec stability
+  confirmed over 3 runs
 
 Branch: `feat/bun-compat` (2 commits ahead of `8cc9e33` == `upstream/main`;
 push/PR is owner-gated).
