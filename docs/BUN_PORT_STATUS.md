@@ -218,7 +218,7 @@ None.
   documented cordis.yml-edit gap; 61/61
 - `39bac40` — docs: record 770134d SHA
 - `2c07253` — docs: record downstream-validation comment on oven-sh/bun#32856
-- (this commit) — Phase 8: logger-console browser-export verification
+- `565fa27` — Phase 8: logger-console browser-export verification
   (logger-console-browser.spec.ts, 7 tests) + tsconfig-paths bundling
   nuance; 68/68
 
