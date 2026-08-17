@@ -6,10 +6,10 @@ classified below.
 
 - Verified Bun release: **1.3.14** (revision `1.3.14+0d9b296af`, macOS arm64)
 - Verified Node releases: v26.4.0 (locally), v24/v26 (upstream CI unchanged)
-- Behavioral proof: `bun test tests/bun` — 68 tests across 13 spec files
-  covering the scenarios listed in "What is verified" below (3 of them are
-  gated on the oven-sh/bun#32856 PR build and skip cleanly when it is not
-  installed).
+- Behavioral proof: `bun test tests/bun` — 69 tests across 14 spec files
+  covering the scenarios listed in "What is verified" below (3 gated on the
+  oven-sh/bun#32856 PR build, 1 gated on a bun#39426-capable build; all 4
+  skip cleanly when their binary is absent).
 - Performance proof: see **`docs/BUN_BENCH.md`** — fork ≡ upstream under
   Node (control), and Bun is faster on every Cordis operation (up to ~5x
   plugin lifecycle, ~4x config boot, ~80x TS module eval).
@@ -47,7 +47,8 @@ Notes on the matrix:
 
 ## What is verified (behavioral, under `bun test tests/bun`)
 
-`tests/bun/` — 68 tests (58 core + 7 browser-export + 3 PR-build-gated):
+`tests/bun/` — 69 tests (58 core + 7 browser-export + 3 #32856-gated + 1
+#39426-gated):
 
 - **Plugins**: function / object / class plugins, config passing, invalid
   plugins rejected, nested plugin trees, idempotent root dispose,
@@ -115,10 +116,11 @@ $ node --expose-internals --import tsx --import @cordisjs/unyaml \
     node_modules/yakumo/lib/cli.js tsc       # exit 0
 
 $ bun test tests/bun
- 68 pass / 0 fail / 248 expect() calls  # 58 core + 7 browser-export on
-                                         # stock Bun + 3 PR-gated hot tests
-                                         # when the bun#32856 build is
-                                         # installed (they skip otherwise)
+ 69 pass / 0 fail / 262 expect() calls  # 58 core + 7 browser-export on
+                                         # stock Bun; +3 #32856-gated and
+                                         # +1 #39426-gated when capable
+                                         # builds are installed (skip
+                                         # otherwise)
 
 $ HOME=/tmp/no-such-home bun test tests/bun/hot.spec.ts   # PR binary hidden
  0 pass / 3 skip / 0 fail
@@ -224,6 +226,35 @@ Therefore:
   config preservation, dispose→activate ordering, rollback). This is only
   worth building if whole-process reload proves inadequate in practice —
   per the port's success criteria it is optional.
+
+## Selective HMR on Bun (Phase C, unblocked)
+
+Selective per-plugin reload — the capability `@cordisjs/plugin-hmr` gets on
+Node from `--expose-internals` module-loader internals — is **now possible
+on Bun via public APIs**, using the primitive fixed by
+[oven-sh/bun#39426](https://github.com/oven-sh/bun/pull/39426)
+(a `file://` URL's query is part of the module key):
+
+```ts
+// fresh module instance per generation, in-process, public API only:
+const mod = await import(`${pathToFileURL(pluginPath).href}?gen=${n}`)
+const fiber = await root.plugin(mod)   // activate under the root
+await previous.dispose()               // graceful swap: disposers run,
+                                       // timers stop, root keeps running
+```
+
+Proof: `tests/bun/selective-reload.spec.ts` (+ its driver fixture) asserts
+the full contract — fresh instance per generation, old fiber disposed only
+after the new one applies, root effects survive unduplicated, single
+disposal at shutdown. It is **capability-gated** (probes the runner binary;
+skips on stock Bun) and passes against a local build of bun#39426
+(`bun test tests/bun` = 69/69 with the build present, 68 + skip without).
+Manual narrative version: `tests/bun/repros/selective-reload.ts`.
+
+What remains for a production `--hot`-class selective HMR service (still
+deferred): file watching mapped to per-module generations, config/state
+preservation across swaps, rollback on failed activation. The module-swap
+primitive itself is done.
 
 ## Upstream integration: oven-sh/bun#32856
 
