@@ -92,8 +92,12 @@ Focused downstream-integration project (owner-directed; no Bun fork):
 - Results: `bun test tests/bun` 61/61 (58 prior + 3 new; with the PR binary
   absent the 3 new tests skip — verified via `HOME=/tmp/... bun test`);
   Node suite 19 files / 163 tests unchanged. No Bun-source changes were
-  needed → **no Bun PR comment required**; nothing failed against the PR
+  needed → **no defect report required**; nothing failed against the PR
   build.
+- Downstream-validation comment posted on the PR (owner-approved):
+  <https://github.com/oven-sh/bun/pull/32856#issuecomment-5313256957> —
+  the six verified cases + the non-module-file note. This is the extent of
+  upstream activity: a comment, not code.
 
 ### Full-suite phase boundary results
 
