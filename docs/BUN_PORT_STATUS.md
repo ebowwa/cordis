@@ -158,6 +158,16 @@ Delivered (in `.upstream/bun`, locally excluded; fork `ebowwa/bun`):
   (65 pass + 4 skip on stock Bun 1.3.14; the new test is
   capability-gated and skips there, activating when a shipped Bun
   includes #39426).
+- CodeRabbit review loop closed (2026-08-17): its single actionable
+  finding (add `import.meta.resolve` coverage) was addressed by
+  `c16333e9`; a threaded reply on the finding
+  (`discussion_r3797402606`) plus an `@coderabbitai review` trigger got
+  the bot's acknowledgment — "the added coverage is sufficient — ✅
+  Review thread resolved" — and it recorded the URL-join vs
+  `Bun__resolveSync` routing as a repo learning. **Zero open bot
+  findings**; `claude[bot]` review stays disabled for fork PRs until a
+  maintainer invokes it. Remaining gate: Buildkite approval (build
+  100030 still `blocked`).
 
 ### Full-suite phase boundary results
 
