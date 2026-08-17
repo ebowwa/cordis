@@ -158,7 +158,31 @@ Delivered (in `.upstream/bun`, locally excluded; fork `ebowwa/bun`):
   (65 pass + 4 skip on stock Bun 1.3.14; the new test is
   capability-gated and skips there, activating when a shipped Bun
   includes #39426).
-- Prior-art sweep (owner-requested, 2026-08-17 ~19:30Z) found **#35601** —
+- Extended prior-art sweep (owner-requested, same session) — full
+  neighborhood map of query/fragment specifier handling in oven-sh/bun:
+  - **#35601** (robobun, open, stalled/dirty) — file://+query fix; ours
+    duplicates partially (disclosed both sides)
+  - **#35703** (open) — resolver: split #fragment off ESM specifiers for
+    the module cache key — the fragment gap #35601's body flagged is
+    already claimed
+  - **#37702** (robobun, open, Aug 12) — plugin onResolve/onLoad prefilter
+    breaks when the QUERY contains a dot (`?mtime=...` fractional) —
+    adjacent, non-conflicting code sites (transpiler prefilter vs module
+    keys)
+  - **#16456** (Jarred-Sumner, MERGED Jan 2025) — introduced relative
+    +query support (fixes #15517); **#16480** was its superseded sibling
+  - **#13391** (astro stale config) — covered by #35601
+  - **#35345** (open) — lcov coverage keeps only the LAST instance of a
+    query-reimported module; test-runner bug, but becomes REACHABLE via
+    file:// query-busting once either fix lands — cross-reference noted
+    for maintainer discussion, not posted publicly (noise discipline)
+  - **#7823** — mock.restore issues; mock.module sites touched by #35601
+  - **Sweep verdict**: the neighborhood is fully occupied by the Bun
+    team's own in-flight work; no uncontested contribution target
+    remains here. Our value-adds stand as: fresh-on-main implementation
+    (#39426), downstream validation + capability-gated matrix (posted on
+    both PRs), and Cordis PR #2 which activates on whichever lands.
+- #35601 detail (original finding, owner-requested, 2026-08-17 ~19:30Z):
   robobun's earlier PR (Jul 25) fixing the SAME bug: identical root-cause
   diagnosis, same three sites, PLUS BunPlugin.cpp / mock.module via a
   shared `fileSystemPathWithQuery` helper, and it also fixes #13391
