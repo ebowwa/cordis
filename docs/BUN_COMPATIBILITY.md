@@ -255,7 +255,12 @@ Manual narrative version: `tests/bun/repros/selective-reload.ts`.
 
 A release binary built from the PR branch is kept at
 `.upstream/bin/bun-39426` (59 MB, `1.4.0-canary.1+c16333e9e`,
-git-excluded). It is a drop-in Bun:
+git-excluded; SHA256
+`57b1e6baa1ec0ea2fdfedf68b797abfd721cc93f8cc1e2700a31cbf10bdd099e`).
+This state is pinned by git tag **`bun-39426`**. The binary is
+reproducible from the public PR branch regardless:
+`git fetch https://github.com/ebowwa/bun pull/39426/head && bun run
+build:release`. It is a drop-in Bun:
 
 ```bash
 # production-style CLI entrypoint — verified end-to-end (boot, plugin
