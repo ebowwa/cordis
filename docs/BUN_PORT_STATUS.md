@@ -195,6 +195,12 @@ Delivered (clone at `~/Developer/bun`, sibling of this repo; fork
   (#39426 issuecomment-5319339258) + standing validation offer renewed
   for #35601's artifacts. Net: **we are co-authors on the PR that will
   fix #21346**; Cordis unaffected (capability gating).
+- **Validation delivered on #35601 (owner-approved)**: fetched the
+  rebased head's CI artifact (`bunx bun-pr 35601` →
+  `1.4.0-canary.1+4a755e67c`), ran the full downstream matrix —
+  **69/69** incl. the selective-reload spec — and spot-benched
+  selective reload at ~523 µs/swap (CI build). Results posted:
+  #35601 issuecomment-5319475773 ("ready to land" from downstream).
   - Neighborhood map posted publicly (owner-approved): full version on
     [#39426](https://github.com/oven-sh/bun/pull/39426#issuecomment-5318438990)
     (four PRs' relationships + history + the #35345 lcov prediction),
