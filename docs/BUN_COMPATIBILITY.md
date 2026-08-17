@@ -6,7 +6,7 @@ classified below.
 
 - Verified Bun release: **1.3.14** (revision `1.3.14+0d9b296af`, macOS arm64)
 - Verified Node releases: v26.4.0 (locally), v24/v26 (upstream CI unchanged)
-- Behavioral proof: `bun test tests/bun` — 61 tests across 12 spec files
+- Behavioral proof: `bun test tests/bun` — 68 tests across 13 spec files
   covering the scenarios listed in "What is verified" below (3 of them are
   gated on the oven-sh/bun#32856 PR build and skip cleanly when it is not
   installed).
@@ -25,7 +25,7 @@ Node-only · ⬜ not yet tested
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `cordis` (core) | ✅ | ✅ (esbuild+tsc) | ✅ | ✅ 57-test suite | ✅ full | **none in src** | none found | — |
 | `@cordisjs/plugin-timer` | ✅ | ✅ | ✅ | ✅ timer.spec | ✅ | globals only (`setTimeout`, `Promise.withResolvers`) | none found | — |
-| `@cordisjs/plugin-logger-console` | ✅ | ✅ | ✅ (node export; browser export untested) | ✅ logger-console.spec | ✅ | `node:util.inspect`, `supports-color` | none found — `util.inspect` output byte-identical for tested formats | — |
+| `@cordisjs/plugin-logger-console` | ✅ | ✅ | ✅ (node and browser exports) | ✅ logger-console + logger-console-browser specs | ✅ | `node:util.inspect`, `supports-color` (node build only — the browser build imports neither) | none found — `util.inspect` output byte-identical for tested formats; browser build needs only a `console` | — |
 | `@cordisjs/plugin-loader` | ✅ | ✅ | ✅ | ✅ loader-mock + loader-include specs | ✅ | `node:module` (optional, degrades), `process.env` | none found; `ModuleLoader.fromInternal()` returns `undefined` → documented fallback `import()` path is used | — (fallback is upstream design) |
 | `@cordisjs/plugin-include` | ✅ | ✅ | ✅ | ✅ loader-include spec | ✅ | `node:path`, `node:fs/promises`, `node:url`, `js-yaml` | none found | — |
 | `@cordisjs/plugin-hmr` | ✅ | ✅ | ✅ | ❌ by design | ❌ **Node-only** | `--expose-internals` ESM `loadCache`, CJS `require.cache`, `node:module` | constructor fails fast: `--expose-internals is required for HMR service` (no Bun internals access — per policy, not attempted) | Cordis (Phase C adapter) or stay Node-only |
@@ -47,7 +47,7 @@ Notes on the matrix:
 
 ## What is verified (behavioral, under `bun test tests/bun`)
 
-`tests/bun/` — 61 tests (58 on stock Bun 1.3.14 + 3 PR-build-gated):
+`tests/bun/` — 68 tests (58 core + 7 browser-export + 3 PR-build-gated):
 
 - **Plugins**: function / object / class plugins, config passing, invalid
   plugins rejected, nested plugin trees, idempotent root dispose,
@@ -71,6 +71,15 @@ Notes on the matrix:
 - **logger-console**: render parity for messages, stackless errors, objects,
   `%o` formatters, log levels — using Bun's `node:util.inspect`
   (`logger-console.spec.ts`)
+- **logger-console browser export**: loaded by path (`lib/browser.js`, the
+  file the export map's `default` condition serves to non-node consumers);
+  plugin wiring via `ctx.plugin`; error→`console.error`,
+  warn→`console.warn`, else→`console.log` with the `[T] name` prefix;
+  arguments passed through **by identity** (the exporter never serializes —
+  native console does the inspecting); levels respected; works with
+  `document`/`window` hard-absent; declaratively: export map routes
+  non-node consumers to `browser.js`, and the shipped artifact contains
+  zero `node:` specifiers (`logger-console-browser.spec.ts`)
 - **Loader + include**: in-memory tree (init/update/self-update/self-dispose,
   intercept-`await` gating); real files: YAML and JSON config loading,
   relative and absolute plugin references, **dynamic TypeScript plugin
@@ -106,9 +115,10 @@ $ node --expose-internals --import tsx --import @cordisjs/unyaml \
     node_modules/yakumo/lib/cli.js tsc       # exit 0
 
 $ bun test tests/bun
- 61 pass / 0 fail / 223 expect() calls  # 58 on stock Bun + 3 PR-gated hot
-                                         # tests when the bun#32856 build
-                                         # is installed (they skip otherwise)
+ 68 pass / 0 fail / 248 expect() calls  # 58 core + 7 browser-export on
+                                         # stock Bun + 3 PR-gated hot tests
+                                         # when the bun#32856 build is
+                                         # installed (they skip otherwise)
 
 $ HOME=/tmp/no-such-home bun test tests/bun/hot.spec.ts   # PR binary hidden
  0 pass / 3 skip / 0 fail
@@ -292,6 +302,17 @@ recorded because they surprised the port itself:
 - **Bun resolves extensionless relative `.ts` imports** (`./plugin` →
   `plugin.ts`) and `file://` URL imports, so the loader's fallback path and
   Include configs referencing `./plugin.ts` work unmodified.
+- **Bundling from inside this repo resolves workspace packages via
+  `tsconfig.json` `paths` (`@cordisjs/plugin-*` → `packages/*/src`), which
+  takes precedence over the packages' export maps.** Both `Bun.build` and
+  esbuild behave this way, and both therefore select the *node* source when
+  bundling a bare `@cordisjs/*` import from within the repo — regardless of
+  `target: 'browser'`. This is repo-config behavior, not a Bun defect and
+  not export-map behavior: the published package's export map (`node` →
+  `lib/index.js`, `default` → `lib/browser.js`) is what real-world browser
+  bundlers consume, and it is verified declaratively in
+  `logger-console-browser.spec.ts`. (Bun's `--conditions` is *additive*, so
+  it cannot remove the `node` condition either.)
 - Bun reports `process.versions.node` = `24.3.0`; `internal/modules/*`
   requires fail with `MODULE_NOT_FOUND`, which the loader already treats as
   "internals unavailable" (falling back to standard `import()`).
@@ -339,8 +360,11 @@ oven-sh/bun#32856, which this fork consumes as an integration fixture (see
 
 - `@cordisjs/plugin-hmr` does not run under Bun and fails fast with a clear
   error. Use the supervisor for development reload.
-- The browser export of logger-console and the `create-cordis` scaffolder
-  are untested under Bun (classified 🟡/⬜ above).
+- The `create-cordis` scaffolder is untested under Bun (classified ⬜ above).
 - The Bun behavioral suite uses real timers; timing assertions carry wide
   margins. The Node suite remains the source of truth for fake-timer
   precision cases.
+- The logger-console **browser** export is verified under Bun with a
+  `console` and no DOM — i.e. as the universal build it is. It is not
+  verified inside an actual browser engine (that would be a web-testrunner
+  concern, not a Bun-runtime one).

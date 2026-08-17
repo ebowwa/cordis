@@ -102,8 +102,8 @@ Focused downstream-integration project (owner-directed; no Bun fork):
 ### Full-suite phase boundary results
 
 ```
-bun test tests/bun                  # 61 pass / 0 fail / 223 expect() calls
-                                     # (58 before Phase 7; +3 PR-gated hot tests)
+bun test tests/bun                  # 68 pass / 0 fail / 248 expect() calls
+                                     # (58 core + 7 browser-export + 3 PR-gated)
 node ... yakumo vitest --import tsx # 19 files / 163 tests passed (see run log)
 ```
 
@@ -161,6 +161,29 @@ order: yakumo esbuild (exit 0), yakumo tsc (exit 0), `bun test tests/bun`
 Lesson recorded: **run the full build, not only the suites, after any
 dependency-graph change.**
 
+### Phase 8 — logger-console browser export under Bun (DONE)
+
+Owner-selected follow-up (upgrades a 🟡 matrix cell to ✅):
+
+- `tests/bun/logger-console-browser.spec.ts` (7 tests): loads
+  `lib/browser.js` by path (the export map's `default`-condition file —
+  under Bun the bare specifier correctly picks the `node` condition),
+  wires it via `ctx.plugin`, and verifies: error/warn/log method routing
+  with `[T] name` prefix; argument pass-through **by identity**; log
+  levels; operation with `document`/`window` hard-absent; plus declarative
+  checks — export map routes non-node consumers to `browser.js`, shipped
+  artifact has zero `node:` specifiers. The browser build's only
+  environment requirement is a `console`.
+- Near-miss recorded (NOT a Bun defect): bundling bare `@cordisjs/*`
+  imports from inside this repo resolves via root `tsconfig.json` `paths`
+  → `packages/*/src`, bypassing export maps — `Bun.build` and esbuild both
+  pick the node source regardless of `target: 'browser'`. Verified with a
+  standalone probe against both tools before discarding the "Bun ignores
+  browser target" hypothesis. Documented under "Known behavior nuances".
+  (Bun's `--conditions` is additive and cannot remove the `node`
+  condition.)
+- Results: `bun test tests/bun` 68/68 (61 + 7 new, all stock-Bun).
+
 ## Current failures
 
 None.
@@ -193,6 +216,11 @@ None.
   confirmed over 3 runs
 - `770134d` — test: third PR-gated hot test (removed-module disposal) +
   documented cordis.yml-edit gap; 61/61
+- `39bac40` — docs: record 770134d SHA
+- `2c07253` — docs: record downstream-validation comment on oven-sh/bun#32856
+- (this commit) — Phase 8: logger-console browser-export verification
+  (logger-console-browser.spec.ts, 7 tests) + tsconfig-paths bundling
+  nuance; 68/68
 
-Branch: `feat/bun-compat` (2 commits ahead of `8cc9e33` == `upstream/main`;
-push/PR is owner-gated).
+Branch: `feat/bun-compat`, pushed; open as ebowwa/cordis#1 (mergeable,
+CI green incl. bun#32856 integration suite).
