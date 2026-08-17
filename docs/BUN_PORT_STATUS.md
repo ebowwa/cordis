@@ -78,13 +78,19 @@ Focused downstream-integration project (owner-directed; no Bun fork):
   `undefined`): runtime-driven awaited disposal before re-evaluation,
   stronger than the module-top `globalThis` guard, which remains as
   defense-in-depth.
-- `tests/bun/hot.spec.ts` (2 tests, PR-build-gated, skip cleanly when the
+- `tests/bun/hot.spec.ts` (3 tests, PR-build-gated, skip cleanly when the
   binary is absent): (a) async disposer (150 ms) completes before the next
   generation activates, timers never duplicate across 3 generations, clean
   SIGINT; (b) broken generation: old root still disposed first, no leaked
-  ticks, recovery on next valid edit, exit 0.
-- Results: `bun test tests/bun` 60/60 (58 prior + 2 new; with the PR binary
-  absent the 2 new tests skip — verified via `HOME=/tmp/... bun test`);
+  ticks, recovery on next valid edit, exit 0; (c) **removed module**: when
+  gen 2 drops a helper import, the helper's `import.meta.hot.dispose` AND
+  the Cordis root-fiber disposal complete strictly before gen 2 activates,
+  and the helper's timer never fires again (the PR's removed-modules claim).
+- Also verified on the PR build: editing `cordis.yml` triggers NO reload
+  (config files are outside the module graph) — documented as a `--hot`
+  limitation; the supervisor's `fs.watch` does catch config edits.
+- Results: `bun test tests/bun` 61/61 (58 prior + 3 new; with the PR binary
+  absent the 3 new tests skip — verified via `HOME=/tmp/... bun test`);
   Node suite 19 files / 163 tests unchanged. No Bun-source changes were
   needed → **no Bun PR comment required**; nothing failed against the PR
   build.
@@ -92,8 +98,8 @@ Focused downstream-integration project (owner-directed; no Bun fork):
 ### Full-suite phase boundary results
 
 ```
-bun test tests/bun                  # 60 pass / 0 fail / 216 expect() calls
-                                     # (58 before Phase 7; +2 PR-gated hot tests)
+bun test tests/bun                  # 61 pass / 0 fail / 223 expect() calls
+                                     # (58 before Phase 7; +3 PR-gated hot tests)
 node ... yakumo vitest --import tsx # 19 files / 163 tests passed (see run log)
 ```
 

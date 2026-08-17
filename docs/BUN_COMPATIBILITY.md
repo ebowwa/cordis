@@ -6,8 +6,8 @@ classified below.
 
 - Verified Bun release: **1.3.14** (revision `1.3.14+0d9b296af`, macOS arm64)
 - Verified Node releases: v26.4.0 (locally), v24/v26 (upstream CI unchanged)
-- Behavioral proof: `bun test tests/bun` — 60 tests across 12 spec files
-  covering the scenarios listed in "What is verified" below (2 of them are
+- Behavioral proof: `bun test tests/bun` — 61 tests across 12 spec files
+  covering the scenarios listed in "What is verified" below (3 of them are
   gated on the oven-sh/bun#32856 PR build and skip cleanly when it is not
   installed).
 - Performance proof: see **`docs/BUN_BENCH.md`** — fork ≡ upstream under
@@ -47,7 +47,7 @@ Notes on the matrix:
 
 ## What is verified (behavioral, under `bun test tests/bun`)
 
-`tests/bun/` — 60 tests (58 on stock Bun 1.3.14 + 2 PR-build-gated):
+`tests/bun/` — 61 tests (58 on stock Bun 1.3.14 + 3 PR-build-gated):
 
 - **Plugins**: function / object / class plugins, config passing, invalid
   plugins rejected, nested plugin trees, idempotent root dispose,
@@ -85,8 +85,9 @@ Notes on the matrix:
   (`watch.spec.ts`)
 - **Development reload (bun#32856 PR build, `--hot` + `import.meta.hot`)**:
   awaited root disposal completes before reactivation (async disposer),
-  resources never duplicate across reloads, failed evaluation still disposes
-  the old root and recovers on the next edit
+  resources never duplicate across reloads, a module the next generation no
+  longer imports is disposed and its resources stop, failed evaluation still
+  disposes the old root and recovers on the next edit
   (`hot.spec.ts`, skips when the PR binary is absent)
 
 Commands and recorded results:
@@ -105,12 +106,12 @@ $ node --expose-internals --import tsx --import @cordisjs/unyaml \
     node_modules/yakumo/lib/cli.js tsc       # exit 0
 
 $ bun test tests/bun
- 60 pass / 0 fail / 216 expect() calls  # 58 on stock Bun + 2 PR-gated hot
+ 61 pass / 0 fail / 223 expect() calls  # 58 on stock Bun + 3 PR-gated hot
                                          # tests when the bun#32856 build
                                          # is installed (they skip otherwise)
 
 $ HOME=/tmp/no-such-home bun test tests/bun/hot.spec.ts   # PR binary hidden
- 0 pass / 2 skip / 0 fail
+ 0 pass / 3 skip / 0 fail
 
 $ node --expose-internals --import tsx --import @cordisjs/unyaml \
     node_modules/yakumo/lib/cli.js vitest --import tsx
@@ -131,7 +132,9 @@ bun path/to/packages/core/bin.bun.js
 bun path/to/packages/core/bin.bun.watch.js
 
 # development with in-process reload — requires a Bun build shipping
-# oven-sh/bun#32856 (import.meta.hot); until then resources would duplicate:
+# oven-sh/bun#32856 (import.meta.hot); until then resources would duplicate.
+# NOTE: config (cordis.yml) edits are NOT watched in this mode — only
+# modules; use the supervisor above if you edit configs often:
 bun --hot path/to/packages/core/bin.bun.js
 ```
 
@@ -248,9 +251,23 @@ bun-32856 --hot packages/core/bin.bun.js              # in your app dir
   generation activates; no timer duplication across 3 generations; a broken
   generation still gets the old root disposed first and the next valid edit
   recovers; SIGINT exits 0.
+- **Removed modules**: when generation 2 of the plugin drops its import of a
+  helper module, the helper's own `import.meta.hot.dispose` callback runs —
+  and the Cordis root-fiber disposal completes — both strictly before
+  generation 2 activates, and the helper's timer never fires again.
+  This is the PR's "disposal for modules no longer imported" claim, verified
+  against Cordis.
 
-**Result: no failure to report.** Every Cordis case passed on the first PR
-build tried (artifact from the Aug 13, 2026 CI run); steps 3–5 of the
+**Known `--hot` limitation (verified on the PR build):** editing
+`cordis.yml` triggers **no reload** — config files are not part of the
+module graph (observed: zero output after a config edit). To reload on
+config changes, use the supervisor (`bin.bun.watch.js`, whose `fs.watch`
+does catch them) or touch a watched module.
+
+**Result: no failure to report.** Every Cordis case — root-fiber disposal,
+async cleanup, dynamic plugins, removed plugins, repeated reloads, failed
+evaluation — passed on the first PR build tried (artifact from the Aug 13,
+2026 CI run, verified on macOS arm64 and Linux in CI); steps 3–5 of the
 integration plan (reduce a failure, clone/build Bun) were not triggered.
 
 **When the PR ships in a release**: drop the PR-binary gating in

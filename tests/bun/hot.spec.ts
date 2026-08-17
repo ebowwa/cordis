@@ -12,12 +12,19 @@ import { fileURLToPath } from 'node:url'
  * Cordis consumes the PR build — it does not reimplement module reloading.
  * The binary is fetched with `bunx bun-pr 32856` (no Bun checkout needed).
  *
- * Proves, against the PR build only:
+ * Proves, against the PR build only (all of Cordis's hot-reload cases):
  *  1. root-fiber disposal COMPLETES before the next generation activates —
  *     including an async disposer (the PR's awaited-dispose claim);
  *  2. resources never duplicate across reloads (timers of generation N stop
  *     before generation N+1 starts);
- *  3. clean SIGINT shutdown of the final generation.
+ *  3. a module the next generation no longer imports is disposed too, and
+ *     its resources stop (the PR's removed-modules claim);
+ *  4. clean SIGINT shutdown of the final generation.
+ *
+ * Known --hot limitation (verified): editing cordis.yml triggers NO reload —
+ * the config file is not part of the module graph. Use the supervisor
+ * (bin.bun.watch.js, whose fs.watch does catch config edits) or touch a
+ * watched module.
  *
  * Skipped when the PR binary is not installed (stock Bun: `import.meta.hot`
  * is undefined there — see docs/BUN_COMPATIBILITY.md "Development reload
@@ -199,6 +206,90 @@ describe('Bun / development reload (bun#32856 import.meta.hot)', () => {
 
         child.kill('SIGINT')
         const code = await new Promise<number | null>(res => child.on('exit', res))
+        expect(code).toBe(0)
+      } finally {
+        await rm(dir, { recursive: true, force: true })
+      }
+    }, 60000)
+
+  it.skipIf(!PR_BIN || !hasHotSupport(PR_BIN))(
+    'module no longer imported by the next generation is disposed and stops',
+    async () => {
+      const dir = await mkdtemp(join(tmpdir(), 'cordis-bun-hot-removed-'))
+      try {
+        await symlink(join(REPO_ROOT, 'node_modules'), join(dir, 'node_modules'), 'dir')
+        await writeFile(join(dir, 'cordis.yml'), '- id: plugin\n  name: ./plugin.ts\n')
+
+        // helper.ts owns a timer via ctx.effect AND its own
+        // import.meta.hot.dispose — gen 2 of plugin.ts drops the import.
+        const HELPER = [
+          'const gen = (globalThis as any).__hgen = ((globalThis as any).__hgen ?? 0) + 1',
+          'console.log(`[helper] loaded gen=${gen}`)',
+          'const hot: any = (import.meta as any).hot',
+          'if (hot) hot.dispose(() => console.log(`[helper] hot-disposed gen=${gen}`))',
+          'export function registerHelper(ctx: any) {',
+          '  ctx.effect(() => {',
+          '    const t = setInterval(() => console.log(`[helper] tick gen=${gen}`), 150)',
+          '    return () => { clearInterval(t); console.log(`[helper] effect-cleaned gen=${gen}`) }',
+          '  })',
+          '}',
+        ].join('\n')
+        const PLUGIN_WITH = [
+          "import { registerHelper } from './helper.ts'",
+          'export function apply(ctx: any) {',
+          "  console.log('[app] applied gen=1')",
+          '  registerHelper(ctx)',
+          '}',
+        ].join('\n')
+        const PLUGIN_WITHOUT = [
+          'export function apply(ctx: any) {',
+          "  console.log('[app] applied gen=2')",
+          '}',
+        ].join('\n')
+
+        await writeFile(join(dir, 'helper.ts'), HELPER)
+        await writeFile(join(dir, 'plugin.ts'), PLUGIN_WITH)
+
+        const child = spawn(PR_BIN!, ['--hot', ENTRY], {
+          cwd: dir,
+          stdio: ['ignore', 'pipe', 'pipe'],
+          env: { ...process.env, NO_COLOR: '1' },
+        })
+
+        let stdout = ''
+        child.stdout.on('data', c => { stdout += c })
+        child.stderr.on('data', c => { stdout += c })
+
+        await waitFor(() => stdout.includes('applied gen=1'))
+        await waitFor(() => stdout.includes('tick gen=1'))
+
+        // gen 2 removes the helper import: bun#32856 claims modules the
+        // next generation no longer imports are disposed too
+        await writeFile(join(dir, 'plugin.ts'), PLUGIN_WITHOUT)
+        await waitFor(() => stdout.includes('applied gen=2'))
+        await sleep(600)
+
+        child.kill('SIGINT')
+        const code = await new Promise<number | null>(res => child.on('exit', res))
+
+        const lines = stdout.split('\n')
+        const idx = (needle: string) => lines.findIndex(l => l.includes(needle))
+
+        // the no-longer-imported module's dispose callback ran...
+        expect(idx('[helper] hot-disposed gen=1')).toBeGreaterThan(-1)
+        // ...and the Cordis root-fiber disposal completed...
+        expect(idx('[helper] effect-cleaned gen=1')).toBeGreaterThan(-1)
+        // ...both strictly before the new generation activated
+        expect(idx('[helper] hot-disposed gen=1')).toBeLessThan(idx('applied gen=2'))
+        expect(idx('[helper] effect-cleaned gen=1')).toBeLessThan(idx('applied gen=2'))
+
+        // and the helper's timer never fired again afterwards
+        const applied2 = idx('applied gen=2')
+        expect(lines.slice(applied2).some(l => l.includes('tick gen=1'))).toBe(false)
+
+        // gen 2 applied exactly once
+        expect(lines.filter(l => l.includes('applied gen=2')).length).toBe(1)
+
         expect(code).toBe(0)
       } finally {
         await rm(dir, { recursive: true, force: true })
