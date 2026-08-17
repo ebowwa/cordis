@@ -38,13 +38,20 @@ const DRIVER = fileURLToPath(new URL('./fixtures/selective-reload-driver.ts', im
 function candidateBin(): string | undefined {
   // resolved to an absolute path: the driver child process runs with a
   // temp cwd, so a relative binary path would not resolve from there
+  //
+  // The PRESERVED bun-39426 binary is preferred over sibling-checkout
+  // builds on purpose: Cordis work stays pinned to the verified release
+  // build even when ~/Developer/bun contains a build of some OTHER
+  // in-flight PR. Point BUN_QUERY_BUSTING_BIN at a sibling build to test
+  // that one explicitly.
   if (process.env.BUN_QUERY_BUSTING_BIN) return resolve(process.env.BUN_QUERY_BUSTING_BIN)
   const candidates = [
-    // a sibling Bun checkout (~/Developer/bun)
+    // the preserved release binary (git-excluded; published as the
+    // bun-39426 GitHub release asset)
+    join(REPO_ROOT, '.upstream/bin/bun-39426'),
+    // a sibling Bun checkout (~/Developer/bun) as fallback
     ...['build/release/bun', 'build/debug/bun-debug'].map(
       rel => join(resolve(REPO_ROOT, '../bun'), rel)),
-    // the preserved release binary from the bun-39426 GitHub release
-    join(REPO_ROOT, '.upstream/bin/bun-39426'),
   ]
   return candidates.find(existsSync)
 }

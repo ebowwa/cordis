@@ -269,9 +269,11 @@ git-excluded). It is a drop-in Bun:
 BUN_QUERY_BUSTING_BIN=.upstream/bin/bun-39426 bun test tests/bun
 ```
 
-Without the env var, the spec auto-detects, in order: a sibling checkout
-`~/Developer/bun` (`build/release/bun` → `build/debug/bun-debug`) → the
-preserved `.upstream/bin/bun-39426` release binary → skips. When a shipped
+Without the env var, the spec auto-detects, in order: the preserved
+`.upstream/bin/bun-39426` release binary (**preferred** — keeps Cordis
+work pinned to the verified build even when `~/Developer/bun` holds a
+build of a different in-flight PR) → a sibling checkout's
+`build/release/bun` → `build/debug/bun-debug` → skips. When a shipped
 Bun release includes the fix, the binary and the
 gating can simply be deleted. (Prior-art note: the Bun team has its own
 in-flight #35601 covering the same ground — see BUN_PORT_STATUS.md; this
