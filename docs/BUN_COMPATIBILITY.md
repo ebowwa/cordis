@@ -270,7 +270,8 @@ BUN_QUERY_BUSTING_BIN=.upstream/bin/bun-39426 bun test tests/bun
 ```
 
 Without the env var, the spec auto-detects
-`.upstream/bun/build/release/bun` → `.upstream/bun/build/debug/bun-debug`
+a sibling checkout `~/Developer/bun` (`build/release/bun` →
+`build/debug/bun-debug`)
 → skips. When a shipped Bun release includes the fix, the binary and the
 gating can simply be deleted. (Prior-art note: the Bun team has its own
 in-flight #35601 covering the same ground — see BUN_PORT_STATUS.md; this

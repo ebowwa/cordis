@@ -117,7 +117,8 @@ building the module key, in `moduleLoaderResolve` (static imports),
 `moduleLoaderImportModule` (dynamic imports), and Rust
 `do_resolve_with_args` (`Bun.resolveSync` / `import.meta.resolve`).
 
-Delivered (in `.upstream/bun`, locally excluded; fork `ebowwa/bun`):
+Delivered (clone at `~/Developer/bun`, sibling of this repo; fork
+`ebowwa/bun`):
 - Fix at all three sites, mirroring the query-preservation pattern the
   same code already used for referrers. `URL__pathFromFileURL` untouched
   (path API; stripping is correct there).

@@ -90,7 +90,7 @@ in-process while the root keeps running — using the `file://` query
 cache-busting fixed by [oven-sh/bun#39426](https://github.com/oven-sh/bun/pull/39426):
 
 ```
-.upstream/bun/build/debug/bun-debug tests/bun/repros/selective-reload.ts
+~/Developer/bun/build/release/bun tests/bun/repros/selective-reload.ts
 # (or any Bun with the fix; stock Bun will re-import the CACHED module —
 #  the bug the PR fixes — and the swap assertion becomes meaningless)
 ```
