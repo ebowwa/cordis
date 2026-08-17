@@ -147,6 +147,17 @@ Delivered (in `.upstream/bun`, locally excluded; fork `ebowwa/bun`):
   approve CI to run. No test failures anywhere; GitHub statuses remain
   "pending" until the gate clears. Monitoring signal: the PR's
   buildkite/bun badge, or `builds/100030.json` (public, unauthenticated).
+- Downstream-usage comment posted on the PR (owner-approved, 2026-08-17):
+  <https://github.com/oven-sh/bun/pull/39426#issuecomment-5317949426> —
+  the selective-plugin-reload use case the fix unlocks (Cordis PR #2's
+  spec linked), the two-public-call primitive, and full-suite green on
+  the debug build.
+- Cordis PR #2 opened stacking on PR #1:
+  `feat/bun-selective-reload` → `feat/bun-compat`, 1 commit, +311/−9 —
+  the Phase C selective-reload spec + driver + repro + docs. CI green
+  (65 pass + 4 skip on stock Bun 1.3.14; the new test is
+  capability-gated and skips there, activating when a shipped Bun
+  includes #39426).
 
 ### Full-suite phase boundary results
 
