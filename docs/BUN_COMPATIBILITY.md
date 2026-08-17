@@ -11,8 +11,11 @@ classified below.
   oven-sh/bun#32856 PR build, 1 gated on a bun#39426-capable build; all 4
   skip cleanly when their binary is absent).
 - Performance proof: see **`docs/BUN_BENCH.md`** — fork ≡ upstream under
-  Node (control), and Bun is faster on every Cordis operation (up to ~5x
-  plugin lifecycle, ~4x config boot, ~80x TS module eval).
+  Node (control), and Bun is faster on every Cordis operation (~5x plugin
+  lifecycle, ~4x config boot, ~5x fresh TS module eval). §6 adds the
+  four-configuration matrix (fork-node / stock Bun 1.3.14 / bun-39426) and
+  **retracts the earlier ~80x TS-eval claim** — it measured module-cache
+  hits on stock Bun (the #21346 bug), not evaluations; honest ratio ~5x.
 - Compatibility is **not** claimed from installation or typechecking alone;
   every claim below maps to an executable test or a recorded command.
 

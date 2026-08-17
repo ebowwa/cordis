@@ -59,7 +59,12 @@ overlapped between fork and upstream within variance except where noted in
 | timer-effect (create+clear timeout) | 124 / 138 | 155 / 216 | 41 / 44 | **3.0x** |
 | loader-mock-50 (tree updates) | 366 / 384 | 333 / 478 | 151 / 206 | **2.4x** |
 | include-boot-20-plugins (ms/boot) | 66 / 71 | 60 / 129 | 15.6 / 18.7 | **4.2x** |
-| module-eval-ts (fresh TS module) | 1202 / 2385 | 1215 / 4111 | 15 / 18 | **~80x** |
+| module-eval-ts (fresh TS module) | 1202 / 2385 | 1215 / 4111 | 15 / 18 | **~80x** ⚠️¹ |
+
+¹ **Corrected in §6:** the Bun column here was measured on stock Bun, where
+the cache-busting query silently returned the CACHED module
+(oven-sh/bun#21346) — i.e. it measured 1 eval + 149 cache hits, not 150
+evaluations. The honest ratio is ~5x, not ~80x.
 
 Reading:
 
@@ -135,3 +140,82 @@ loader-thread RPC when TypeScript is involved.
   use the same tmpdir.
 - The Node side always preloads tsx (required for the TS workloads); for
   pure-JS workloads tsx is inert after startup.
+
+## 6. Four-configuration matrix (2026-08-17, same-day re-run)
+
+Runtimes compared on one day, two full passes each (best/worst across
+passes; §2's fork-vs-upstream control already proved fork ≡ upstream under
+Node, so upstream is omitted here):
+
+- **fork node** — Node v26.4.0 + tsx
+- **bun 1.3.14** — stock release (what users get today)
+- **bun-39426** — release build `1.4.0-canary.1+c16333e9e` containing our
+  oven-sh/bun#39426 fix (release asset `bun-39426-darwin-aarch64`)
+
+µs/op, best / worst of two passes (lower is better); regenerate with
+`node bench/compare.mjs`:
+
+| workload | fork node | bun 1.3.14 | bun-39426 | node/bun | node/bun-39426 |
+| --- | --- | --- | --- | --- | --- |
+| context-create | 1576 / 1614 | 152 / 158 | 133 / 191 | 10.4x | 11.8x |
+| plugin-lifecycle (apply+dispose) | 633 / 766 | 149 / 152 | 125 / 138 | 4.3x | 5.0x |
+| plugin-bulk-500 | 589 / 728 | 117 / 140 | 96 / 153 | 5.0x | 6.1x |
+| effects-sync-5 | 89 / 96 | 12 / 16 | 11 / 15 | 7.4x | 7.8x |
+| effects-async | 1231 / 1236 | 1207 / 1311 | 1184 / 1195 | 1.0x | 1.0x |
+| emit-10-listeners | 24 / 26 | 18 / 21 | 13 / 14 | 1.4x | 1.9x |
+| parallel-10-async | 31 / 38 | 22 / 24 | 17 / 24 | 1.4x | 1.8x |
+| serial-5 | 17 / 19 | 12 / 12 | 11 / 12 | 1.5x | 1.6x |
+| bail-5 | 21 / 21 | 8 / 10 | 8 / 9 | 2.4x | 2.6x |
+| waterfall-5 | 26 / 26 | 15 / 20 | 13 / 17 | 1.7x | 1.9x |
+| inject-cycles | 2629 / 2638 | 2536 / 2921 | 2477 / 2486 | 1.0x | 1.1x |
+| isolate-provide | 2827 / 2896 | 2596 / 2626 | 2554 / 2567 | 1.1x | 1.1x |
+| timer-effect | 122 / 141 | 35 / 38 | 30 / 40 | 3.5x | 4.0x |
+| loader-mock-50 | 339 / 366 | 100 / 126 | 126 / 137 | 3.4x | 2.7x |
+| include-boot-20-plugins (ms/boot) | 54.6 / 64.0 | 14.0 / 15.0 | 9.9 / 16.2 | 3.9x | 5.5x |
+| module-eval-ts | 982 / 1369 | 9 / 10 ⚠️² | 194 / 296 | 104x ⚠️² | **5.1x** |
+| selective-reload (swap gen) | 1597 / 1887 | 169 / 185 ⚠️² | 390 / 415 | 9.5x ⚠️² | **4.1x** |
+
+² **The stock-Bun numbers for query-busting workloads are degenerate**: on
+1.3.14 the distinct queries map to one cached module (oven-sh/bun#21346,
+fixed by our #39426 — see §6.1), so those rows measure cache hits, not
+module evaluation.
+
+### 6.1 The measurement bug inside the benchmark
+
+The Phase 6 "~80x TS module eval" claim is **retracted**. `module-eval-ts`
+cache-busts via `file://…?b<N>i<M>`; on stock Bun every import after the
+first returned the cached instance, so the workload measured one
+transpile+eval plus 149 lookups. On bun-39426 (and on Node), each query is
+a genuinely fresh instance — giving the honest ratios above (~5x). This is
+the same bug class Cordis PR #2 exists to use, and it silently inflated a
+benchmark: a decent argument for capability probes in benchmarks, not just
+tests. Verified directly (`a === b` on distinct queries): stock bun →
+`true` (cached), bun-39426/node → `false` (fresh), matching the numbers.
+
+### 6.2 New capability axis: selective reload
+
+`selective-reload` (new workload): one full generation swap = fresh TS
+module via query-busted import + activate under the root + graceful
+dispose of the previous fiber — the Phase C primitive. Real cost on
+bun-39426: **390–415 µs per swap**, ~4.1x faster than Node's honest
+equivalent (tsx eval + swap). On stock Bun the row is degenerate (no
+re-evaluation occurs). Node cannot do the in-place variant at all without
+`--expose-internals`; this workload's Node column goes through tsx.
+
+### 6.3 bun-39426 vs stock 1.3.14 generally
+
+Across the 15 honest (non-degenerate) workloads the canary carrying our
+fix is equal or faster than stock 1.3.14 (e.g. plugin-lifecycle 125–138 vs
+149–152; context-create 133 vs 152 best-case) — expected: it is three
+weeks of newer `main` plus the fix, built as release. Cold start and leak
+checks on bun-39426: heap growth 0.99 MB over 600 load/dispose cycles,
+registry empty at end (parity with the §4 stock-Bun result).
+
+Reproduce this section:
+
+```bash
+node bench/run.mjs run --runtime node --label fork-node-r1   # + r2
+node bench/run.mjs run --runtime bun  --label bun-r1         # + r2
+BUN_BIN=.upstream/bin/bun-39426 node bench/run.mjs run --runtime bun --label bun39426-r1  # + r2
+node bench/compare.mjs
+```
