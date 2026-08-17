@@ -99,6 +99,41 @@ Focused downstream-integration project (owner-directed; no Bun fork):
   the six verified cases + the non-module-file note. This is the extent of
   upstream activity: a comment, not code.
 
+### Phase 9 — upstream code contribution to oven-sh/bun (DONE)
+
+Owner then elected full Bun-contributor work (Bun-only, decoupled from
+Cordis). Recon over the HMR/module-reload area surfaced
+[oven-sh/bun#21346](https://github.com/oven-sh/bun/issues/21346):
+`import()` of a `file://` URL with distinct query strings returns the SAME
+cached module instance (relative specifiers with queries work correctly).
+Confirmed by standalone repro on Node v26.4.0 (3/3 distinct) vs Bun 1.3.14
+and the bun#32856 PR build (1/3 — cached). This is also the exact
+public-API primitive Cordis's deferred Phase C selective-HMR adapter
+depends on.
+
+Root cause: the module loader decoded `file://` specifiers to a path via
+`WTF::URL::fileSystemPath()` (pathname only — query dropped) before
+building the module key, in `moduleLoaderResolve` (static imports),
+`moduleLoaderImportModule` (dynamic imports), and Rust
+`do_resolve_with_args` (`Bun.resolveSync` / `import.meta.resolve`).
+
+Delivered (in `.upstream/bun`, locally excluded; fork `ebowwa/bun`):
+- Fix at all three sites, mirroring the query-preservation pattern the
+  same code already used for referrers. `URL__pathFromFileURL` untouched
+  (path API; stripping is correct there).
+- 3 tests added to the existing `test/js/bun/resolve/import-query.test.ts`
+  (dynamic/static `file://`+query distinct instances; `Bun.resolveSync`
+  keeps the query).
+- Verification per repo rules: new tests fail under `USE_SYSTEM_BUN=1`;
+  18/18 pass via `bun bd test`; full `test/js/bun/resolve/` failure set
+  identical to unmodified-main baseline (6 pre-existing debug-build
+  timeouts) — zero regressions.
+- Toolchain note: llvm@21/cmake/ninja/rust installed; first debug build
+  ≈40 min on this machine; PR branch prefix `claude/` is a repo CI
+  requirement.
+- **Open as [oven-sh/bun#39426](https://github.com/oven-sh/bun/pull/39426)**
+  (owner-approved), Fixes #21346.
+
 ### Full-suite phase boundary results
 
 ```
