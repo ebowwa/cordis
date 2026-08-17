@@ -183,6 +183,18 @@ Delivered (clone at `~/Developer/bun`, sibling of this repo; fork
     remains here. Our value-adds stand as: fresh-on-main implementation
     (#39426), downstream validation + capability-gated matrix (posted on
     both PRs), and Cordis PR #2 which activates on whichever lands.
+- **RESOLUTION (2026-08-17 19:23Z)**: robobun closed #39426 in favor of
+  #35601 — "the PR we will take forward", rebased onto main the same day
+  (likely un-stalled by our validation/map comments). **Our contribution
+  survives as co-authorship**: our `import.meta.resolveSync` /
+  `import.meta.resolve` tests and the setup1/setup2 static-import
+  token-capture pattern were carried into #35601 commit `4a755e67`
+  ("test: cover import.meta.resolveSync, require and static instances…")
+  with `Co-authored-by: ebowwa`. The maintainer noted our diagnosis
+  matched theirs. Gracious close reply posted
+  (#39426 issuecomment-5319339258) + standing validation offer renewed
+  for #35601's artifacts. Net: **we are co-authors on the PR that will
+  fix #21346**; Cordis unaffected (capability gating).
   - Neighborhood map posted publicly (owner-approved): full version on
     [#39426](https://github.com/oven-sh/bun/pull/39426#issuecomment-5318438990)
     (four PRs' relationships + history + the #35345 lcov prediction),
