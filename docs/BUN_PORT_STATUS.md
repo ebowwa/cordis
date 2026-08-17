@@ -233,6 +233,28 @@ Owner-selected follow-up (upgrades a 🟡 matrix cell to ✅):
   condition.)
 - Results: `bun test tests/bun` 68/68 (61 + 7 new, all stock-Bun).
 
+### Phase 10 — Phase C selective HMR unblocked by our own PR (DONE)
+
+Owner asked "can we use it with our cordis?" — answered at three levels:
+
+1. **Drop-in compatibility**: the full Cordis suite runs green on the
+   bun#39426 debug build — 68/68 (all stock tests, incl. the 3 #32856-gated
+   ones skipped for lack of that binary's alias).
+2. **The previously-impossible use case**: selective plugin reload now
+   works in-process on public APIs — `import(fileURL + "?gen=N")` for a
+   fresh instance + `root.plugin(mod)` + `previousFiber.dispose()` for a
+   graceful swap. Verified by transcript: fresh instance per generation,
+   old fiber disposed only after the new applies, root effects survive
+   unduplicated, single disposal at shutdown.
+3. **Locked in**: `tests/bun/selective-reload.spec.ts` +
+   `fixtures/selective-reload-driver.ts`, capability-gated (probes the
+   runner for query-busting; stock Bun → clean skip). 69/69 with the
+   capable build present. Manual narrative: `repros/selective-reload.ts`.
+
+Still deferred for a production selective-HMR service: fs watching →
+generations, config preservation, rollback. The module-swap primitive is
+done.
+
 ## Current failures
 
 None.

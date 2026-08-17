@@ -82,3 +82,20 @@ These behaviors motivated the supervisor design
 (`packages/core/bin.bun.watch.js`) for stock Bun, and the
 `import.meta.hot`-driven in-process reload for Bun builds shipping bun#32856
 (see `tests/bun/hot.spec.ts`).
+
+## selective-reload.ts
+
+Demonstrates Phase C selective plugin reload — swap ONE plugin generation
+in-process while the root keeps running — using the `file://` query
+cache-busting fixed by [oven-sh/bun#39426](https://github.com/oven-sh/bun/pull/39426):
+
+```
+.upstream/bun/build/debug/bun-debug tests/bun/repros/selective-reload.ts
+# (or any Bun with the fix; stock Bun will re-import the CACHED module —
+#  the bug the PR fixes — and the swap assertion becomes meaningless)
+```
+
+Observed (bun#39426 debug build): `apply gen=2 captured=reloaded` (fresh
+instance) → `disposed gen=1` (graceful old-fiber disposal) → resident ticks
+continue unduplicated → only gen=2 ticks afterwards. The asserted version
+lives in `tests/bun/selective-reload.spec.ts` (capability-gated).
