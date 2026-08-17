@@ -224,6 +224,15 @@ done.
   this round: `BUN_QUERY_BUSTING_BIN` is `resolve()`d (the driver child
   runs from a temp cwd — a relative override path broke it; found and
   fixed during release-binary verification).
+- **Pinned & published (owner-approved)**: state tagged **`bun-39426`**
+  (annotated, on `f3ebb4e` = PR #2 head; message carries the SHA256,
+  verification evidence, rebuild path, upstream refs). Binary published
+  as a GitHub Release asset
+  (`releases/download/bun-39426/bun-39426-darwin-aarch64`, 59 MB) —
+  download round-trip verified: checksum matches
+  `57b1e6ba…bdd099e`, `--revision` reports our commit. Docs record the
+  checksum and rebuild command, so the artifact is verifiable AND
+  reproducible independent of this machine.
 
 ## Current failures
 
