@@ -161,13 +161,17 @@ Delivered (in `.upstream/bun`, locally excluded; fork `ebowwa/bun`):
 - CodeRabbit review loop closed (2026-08-17): its single actionable
   finding (add `import.meta.resolve` coverage) was addressed by
   `c16333e9`; a threaded reply on the finding
-  (`discussion_r3797402606`) plus an `@coderabbitai review` trigger got
-  the bot's acknowledgment — "the added coverage is sufficient — ✅
-  Review thread resolved" — and it recorded the URL-join vs
-  `Bun__resolveSync` routing as a repo learning. **Zero open bot
-  findings**; `claude[bot]` review stays disabled for fork PRs until a
-  maintainer invokes it. Remaining gate: Buildkite approval (build
-  100030 still `blocked`).
+  (`discussion_r3797402606`) got the bot's acknowledgment ("the added
+  coverage is sufficient — ✅ Review thread resolved", plus a recorded
+  repo learning on URL-join vs `Bun__resolveSync` routing). Note:
+  CodeRabbit **auto-updates on every push** by editing its walkthrough
+  comment in place (not via new review records) — its 17:06 auto-update
+  delta-reviewed `4fde4e56 → c16333e9` with **zero actionable
+  comments** and raised Merge Risk 🔵 Low → **⚪ Minimal**; the manual
+  `@coderabbitai review` trigger was redundant (that command is only
+  for paused auto-reviews). **Zero open bot findings**; `claude[bot]`
+  review stays disabled for fork PRs until a maintainer invokes it.
+  Remaining gate: Buildkite approval (build 100030 still `blocked`).
 
 ### Full-suite phase boundary results
 
