@@ -26,7 +26,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
  *     are disposed exactly once, at shutdown.
  *
  * Runner selection is by capability probe, not version: BUN_QUERY_BUSTING_BIN
- * env var, else a local `.upstream/bun/build/debug/bun-debug` checkout.
+ * env var, else a local Bun checkout's build under `.upstream/bun` (release
+ * `build/release/bun` preferred, then debug `build/debug/bun-debug`).
  * Skips cleanly when no capable binary exists (stock Bun, CI).
  */
 
@@ -35,8 +36,11 @@ const DRIVER = fileURLToPath(new URL('./fixtures/selective-reload-driver.ts', im
 
 function candidateBin(): string | undefined {
   if (process.env.BUN_QUERY_BUSTING_BIN) return process.env.BUN_QUERY_BUSTING_BIN
-  const local = join(REPO_ROOT, '.upstream/bun/build/debug/bun-debug')
-  return existsSync(local) ? local : undefined
+  for (const rel of ['build/release/bun', 'build/debug/bun-debug']) {
+    const local = join(REPO_ROOT, '.upstream/bun', rel)
+    if (existsSync(local)) return local
+  }
+  return undefined
 }
 
 /** capability probe: does import(url+query) bypass the module cache? */
