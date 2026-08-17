@@ -247,9 +247,31 @@ Proof: `tests/bun/selective-reload.spec.ts` (+ its driver fixture) asserts
 the full contract — fresh instance per generation, old fiber disposed only
 after the new one applies, root effects survive unduplicated, single
 disposal at shutdown. It is **capability-gated** (probes the runner binary;
-skips on stock Bun) and passes against a local build of bun#39426
+skips on stock Bun) and passes against a release build of bun#39426
 (`bun test tests/bun` = 69/69 with the build present, 68 + skip without).
 Manual narrative version: `tests/bun/repros/selective-reload.ts`.
+
+### Running Cordis on the contributed Bun today
+
+A release binary built from the PR branch is kept at
+`.upstream/bin/bun-39426` (59 MB, `1.4.0-canary.1+c16333e9e`,
+git-excluded). It is a drop-in Bun:
+
+```bash
+# production-style CLI entrypoint — verified end-to-end (boot, plugin
+# load, SIGINT root disposal, exit 0):
+.upstream/bin/bun-39426 packages/core/bin.bun.js
+
+# force the capability-gated tests to use it:
+BUN_QUERY_BUSTING_BIN=.upstream/bin/bun-39426 bun test tests/bun
+```
+
+Without the env var, the spec auto-detects
+`.upstream/bun/build/release/bun` → `.upstream/bun/build/debug/bun-debug`
+→ skips. When a shipped Bun release includes the fix, the binary and the
+gating can simply be deleted. (Prior-art note: the Bun team has its own
+in-flight #35601 covering the same ground — see BUN_PORT_STATUS.md; this
+binary is for local use regardless of which PR lands.)
 
 What remains for a production `--hot`-class selective HMR service (still
 deferred): file watching mapped to per-module generations, config/state

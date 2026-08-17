@@ -328,6 +328,18 @@ Still deferred for a production selective-HMR service: fs watching →
 generations, config preservation, rollback. The module-swap primitive is
 done.
 
+- **Release binary shipped locally (same session)**: `bun run
+  build:release` from the PR branch produced
+  `1.4.0-canary.1+c16333e9e` (62 MB at build; 59 MB preserved at
+  `.upstream/bin/bun-39426`, git-excluded; build dir deleted after —
+  full build ≈45 min, disk peak reclaimed to 15 GB free). Verified:
+  `--revision` ok; selective-reload spec passes against it (69/69 full
+  suite with it present); real-app smoke — `bin.bun.js` boots Cordis,
+  loads a plugin, SIGINT disposes the root, exit 0. Spec hardening from
+  this round: `BUN_QUERY_BUSTING_BIN` is `resolve()`d (the driver child
+  runs from a temp cwd — a relative override path broke it; found and
+  fixed during release-binary verification).
+
 ## Current failures
 
 None.
