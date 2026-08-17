@@ -2,21 +2,28 @@
 /**
  * Cordis development supervisor for Bun — Phase 5A of the Bun port.
  *
- * Why a supervisor instead of plain `bun --watch` (measured on Bun 1.3.14,
- * see docs/BUN_COMPATIBILITY.md):
+ * Why a supervisor instead of plain `bun --watch` / `bun --hot` (measured on
+ * Bun 1.3.14, see docs/BUN_COMPATIBILITY.md):
  *
- * - `bun --watch` re-evaluates the entry in-process: every reload gets a
- *   fresh `globalThis`/`process`, so the new evaluation cannot reach the
- *   previous Cordis root context — Cordis disposers never run on reload.
- * - Bun clears pending *timers* from previous evaluations, but without
- *   invoking disposers, and old signal handlers accumulate.
- * - `bun --hot` keeps previous evaluations' timers and listeners running,
- *   duplicating Cordis state (verified).
+ * - `bun --watch` is a **hard restart**: `globalThis` is fresh after every
+ *   reload, so the new evaluation cannot reach the previous Cordis root
+ *   context — Cordis disposers never run on reload. Pending timers are
+ *   discarded without their clearing callbacks, and there is no public
+ *   before-reload hook. (Signal handlers do NOT accumulate — each
+ *   generation starts from clean state; on 1.3.14 the pid merely stays
+ *   the same, but no JS state survives the restart.)
+ * - `bun --hot` is the **in-process soft reload**: `globalThis` survives
+ *   and previous generations' timers and listeners keep running,
+ *   duplicating Cordis state. On a Bun build shipping import.meta.hot
+ *   (oven-sh/bun#32856), `bin.bun.js` performs graceful in-process
+ *   disposal instead — prefer `bun --hot bin.bun.js` there. On stock Bun
+ *   this supervisor remains the supported reload mechanism.
  *
  * The supervisor spawns the real entrypoint as a child process and restarts
  * it on file changes. Restart = SIGTERM → the child disposes its complete
- * root fiber (timers, listeners, services) → exits 0 → respawn. This is the
- * only way to get genuine graceful disposal per reload using public APIs.
+ * root fiber (timers, listeners, services) → exits 0 → respawn. On stock
+ * Bun this is the only way to get genuine graceful disposal per reload
+ * using public APIs.
  *
  * Usage: bun packages/core/bin.bun.watch.js [child args...]
  * (run from your application directory, like bin.js / bin.bun.js)
