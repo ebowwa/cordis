@@ -158,6 +158,22 @@ Delivered (in `.upstream/bun`, locally excluded; fork `ebowwa/bun`):
   (65 pass + 4 skip on stock Bun 1.3.14; the new test is
   capability-gated and skips there, activating when a shipped Bun
   includes #39426).
+- Prior-art sweep (owner-requested, 2026-08-17 ~19:30Z) found **#35601** —
+  robobun's earlier PR (Jul 25) fixing the SAME bug: identical root-cause
+  diagnosis, same three sites, PLUS BunPlugin.cpp / mock.module via a
+  shared `fileSystemPathWithQuery` helper, and it also fixes #13391
+  (`bunx --bun astro dev` stale config). It is stalled/dirty (untouched
+  since Jul 26, merge conflicts vs main, mixed CI). **Our #39426 is a
+  partial duplicate, opened unknowingly** — the original recon searched
+  issues (found #21346) but never `is:pr 21346` for prior PRs. Lesson
+  recorded: run the 5-second prior-PR search before opening any fix.
+  Disclosed on both (owner-approved): [#39426
+  comment](https://github.com/oven-sh/bun/pull/39426#issuecomment-5318372531)
+  (offering to close as superseded if they revive theirs) and [#35601
+  comment](https://github.com/oven-sh/bun/pull/35601#issuecomment-5318379869)
+  (downstream validation + test-matrix offer, to help un-stall the better
+  PR). Cordis PR #2 is unaffected: its gating is capability-based and
+  activates on whichever PR lands.
 - CodeRabbit review loop closed (2026-08-17): its single actionable
   finding (add `import.meta.resolve` coverage) was addressed by
   `c16333e9`; a threaded reply on the finding
