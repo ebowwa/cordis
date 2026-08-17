@@ -187,6 +187,8 @@ None.
 - `c678d87` — docs: finish --watch/--hot correction (bin.bun.watch.js
   header, watch-timer-disposers.ts SIGINT comment); hot.spec stability
   confirmed over 3 runs
+- `770134d` — test: third PR-gated hot test (removed-module disposal) +
+  documented cordis.yml-edit gap; 61/61
 
 Branch: `feat/bun-compat` (2 commits ahead of `8cc9e33` == `upstream/main`;
 push/PR is owner-gated).
