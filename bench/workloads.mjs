@@ -309,6 +309,40 @@ export const workloads = [
       await rm(dir, { recursive: true, force: true })
     },
   },
+  {
+    // Full selective-reload generation swap: fresh module instance via
+    // query-busted import + activate under root + graceful dispose of the
+    // previous fiber. Exercises the oven-sh/bun#39426 primitive end-to-end.
+    // NOTE on stock Bun (< the fix): the import returns the CACHED module
+    // (the #21346 bug), so it measures plugin-swap WITHOUT re-evaluation —
+    // a degenerate-but-informative decomposition, not the real workload.
+    name: 'selective-reload',
+    ops: 120, batches: 4, warmup: 1,
+    async setup() {
+      const dir = await mkdtemp(join(tmpdir(), 'cordis-bench-sel-'))
+      const file = join(dir, 'plugin.ts')
+      await writeFile(file, PLUGIN_TS, 'utf8')
+      const root = new Context()
+      return { root, url: pathToFileURL(file).href, gen: 0 }
+    },
+    async batch(state, batchIndex) {
+      const { root, url } = state
+      let fiber = null
+      for (let i = 0; i < this.ops; i++) {
+        state.gen += 1
+        const mod = await import(/* @vite-ignore */ `${url}?g${batchIndex}-${state.gen}`)
+        const next = await root.plugin(mod)
+        if (fiber) await fiber.dispose()
+        fiber = next
+      }
+      await fiber.dispose()
+    },
+    async teardown({ root, url }) {
+      await root.fiber.dispose()
+      const dir = new URL('.', url).pathname
+      await rm(dir, { recursive: true, force: true })
+    },
+  },
 ]
 
 export async function runWorkloads(filter) {

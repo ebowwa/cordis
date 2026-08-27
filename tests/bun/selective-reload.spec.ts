@@ -26,9 +26,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
  *     are disposed exactly once, at shutdown.
  *
  * Runner selection is by capability probe, not version: BUN_QUERY_BUSTING_BIN
- * env var, else a local Bun checkout's build under `.upstream/bun` (release
- * `build/release/bun` preferred, then debug `build/debug/bun-debug`).
- * Skips cleanly when no capable binary exists (stock Bun, CI).
+ * env var, else a sibling Bun checkout at `../bun` relative to this repo
+ * (i.e. ~/Developer/bun — release `build/release/bun` preferred, then
+ * debug `build/debug/bun-debug`). Skips cleanly when no capable binary
+ * exists (stock Bun, CI).
  */
 
 const REPO_ROOT = resolve(fileURLToPath(new URL('../../', import.meta.url)))
@@ -37,12 +38,22 @@ const DRIVER = fileURLToPath(new URL('./fixtures/selective-reload-driver.ts', im
 function candidateBin(): string | undefined {
   // resolved to an absolute path: the driver child process runs with a
   // temp cwd, so a relative binary path would not resolve from there
+  //
+  // The PRESERVED bun-39426 binary is preferred over sibling-checkout
+  // builds on purpose: Cordis work stays pinned to the verified release
+  // build even when ~/Developer/bun contains a build of some OTHER
+  // in-flight PR. Point BUN_QUERY_BUSTING_BIN at a sibling build to test
+  // that one explicitly.
   if (process.env.BUN_QUERY_BUSTING_BIN) return resolve(process.env.BUN_QUERY_BUSTING_BIN)
-  for (const rel of ['build/release/bun', 'build/debug/bun-debug']) {
-    const local = join(REPO_ROOT, '.upstream/bun', rel)
-    if (existsSync(local)) return local
-  }
-  return undefined
+  const candidates = [
+    // the preserved release binary (git-excluded; published as the
+    // bun-39426 GitHub release asset)
+    join(REPO_ROOT, '.upstream/bin/bun-39426'),
+    // a sibling Bun checkout (~/Developer/bun) as fallback
+    ...['build/release/bun', 'build/debug/bun-debug'].map(
+      rel => join(resolve(REPO_ROOT, '../bun'), rel)),
+  ]
+  return candidates.find(existsSync)
 }
 
 /** capability probe: does import(url+query) bypass the module cache? */

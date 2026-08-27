@@ -99,6 +99,147 @@ Focused downstream-integration project (owner-directed; no Bun fork):
   the six verified cases + the non-module-file note. This is the extent of
   upstream activity: a comment, not code.
 
+### Phase 9 — upstream code contribution to oven-sh/bun (DONE)
+
+Owner then elected full Bun-contributor work (Bun-only, decoupled from
+Cordis). Recon over the HMR/module-reload area surfaced
+[oven-sh/bun#21346](https://github.com/oven-sh/bun/issues/21346):
+`import()` of a `file://` URL with distinct query strings returns the SAME
+cached module instance (relative specifiers with queries work correctly).
+Confirmed by standalone repro on Node v26.4.0 (3/3 distinct) vs Bun 1.3.14
+and the bun#32856 PR build (1/3 — cached). This is also the exact
+public-API primitive Cordis's deferred Phase C selective-HMR adapter
+depends on.
+
+Root cause: the module loader decoded `file://` specifiers to a path via
+`WTF::URL::fileSystemPath()` (pathname only — query dropped) before
+building the module key, in `moduleLoaderResolve` (static imports),
+`moduleLoaderImportModule` (dynamic imports), and Rust
+`do_resolve_with_args` (`Bun.resolveSync` / `import.meta.resolve`).
+
+Delivered (clone at `~/Developer/bun`, sibling of this repo; fork
+`ebowwa/bun`):
+- Fix at all three sites, mirroring the query-preservation pattern the
+  same code already used for referrers. `URL__pathFromFileURL` untouched
+  (path API; stripping is correct there).
+- 3 tests added to the existing `test/js/bun/resolve/import-query.test.ts`
+  (dynamic/static `file://`+query distinct instances; `Bun.resolveSync`
+  keeps the query).
+- Verification per repo rules: new tests fail under `USE_SYSTEM_BUN=1`;
+  18/18 pass via `bun bd test`; full `test/js/bun/resolve/` failure set
+  identical to unmodified-main baseline (6 pre-existing debug-build
+  timeouts) — zero regressions.
+- Toolchain note: llvm@21/cmake/ninja/rust installed; first debug build
+  ≈40 min on this machine; PR branch prefix `claude/` is a repo CI
+  requirement.
+- **Open as [oven-sh/bun#39426](https://github.com/oven-sh/bun/pull/39426)**
+  (owner-approved), Fixes #21346.
+- Post-open review follow-up (`c16333e9`): CodeRabbit flagged missing
+  `import.meta.resolve` coverage. Investigation showed
+  `import.meta.resolve` handles `file://` via URL joining (never hits the
+  changed code — already correct; guard test added), while
+  `import.meta.resolveSync` routes through `Bun__resolveSync` and HAD the
+  same dropped query — now covered and fixed by the same change.
+  20/20 in the file; reply posted on the PR.
+- CI state (2026-08-17 ~16:00Z): build 99960 (first commit) ran ~6h then
+  was auto-superseded (`cancel_reason: build_skipping`) when build 100030
+  dispatched for `c16333e9`. Build 100030 is **`blocked`** — Buildkite's
+  approval gate for fork/first-time contributors; a maintainer must
+  approve CI to run. No test failures anywhere; GitHub statuses remain
+  "pending" until the gate clears. Monitoring signal: the PR's
+  buildkite/bun badge, or `builds/100030.json` (public, unauthenticated).
+- Downstream-usage comment posted on the PR (owner-approved, 2026-08-17):
+  <https://github.com/oven-sh/bun/pull/39426#issuecomment-5317949426> —
+  the selective-plugin-reload use case the fix unlocks (Cordis PR #2's
+  spec linked), the two-public-call primitive, and full-suite green on
+  the debug build.
+- Cordis PR #2 opened stacking on PR #1:
+  `feat/bun-selective-reload` → `feat/bun-compat`, 1 commit, +311/−9 —
+  the Phase C selective-reload spec + driver + repro + docs. CI green
+  (65 pass + 4 skip on stock Bun 1.3.14; the new test is
+  capability-gated and skips there, activating when a shipped Bun
+  includes #39426).
+- Extended prior-art sweep (owner-requested, same session) — full
+  neighborhood map of query/fragment specifier handling in oven-sh/bun:
+  - **#35601** (robobun, open, stalled/dirty) — file://+query fix; ours
+    duplicates partially (disclosed both sides)
+  - **#35703** (open) — resolver: split #fragment off ESM specifiers for
+    the module cache key — the fragment gap #35601's body flagged is
+    already claimed
+  - **#37702** (robobun, open, Aug 12) — plugin onResolve/onLoad prefilter
+    breaks when the QUERY contains a dot (`?mtime=...` fractional) —
+    adjacent, non-conflicting code sites (transpiler prefilter vs module
+    keys)
+  - **#16456** (Jarred-Sumner, MERGED Jan 2025) — introduced relative
+    +query support (fixes #15517); **#16480** was its superseded sibling
+  - **#13391** (astro stale config) — covered by #35601
+  - **#35345** (open) — lcov coverage keeps only the LAST instance of a
+    query-reimported module; test-runner bug, but becomes REACHABLE via
+    file:// query-busting once either fix lands — cross-reference noted
+    for maintainer discussion, not posted publicly (noise discipline)
+  - **#7823** — mock.restore issues; mock.module sites touched by #35601
+  - **Sweep verdict**: the neighborhood is fully occupied by the Bun
+    team's own in-flight work; no uncontested contribution target
+    remains here. Our value-adds stand as: fresh-on-main implementation
+    (#39426), downstream validation + capability-gated matrix (posted on
+    both PRs), and Cordis PR #2 which activates on whichever lands.
+- **RESOLUTION (2026-08-17 19:23Z)**: robobun closed #39426 in favor of
+  #35601 — "the PR we will take forward", rebased onto main the same day
+  (likely un-stalled by our validation/map comments). **Our contribution
+  survives as co-authorship**: our `import.meta.resolveSync` /
+  `import.meta.resolve` tests and the setup1/setup2 static-import
+  token-capture pattern were carried into #35601 commit `4a755e67`
+  ("test: cover import.meta.resolveSync, require and static instances…")
+  with `Co-authored-by: ebowwa`. The maintainer noted our diagnosis
+  matched theirs. Gracious close reply posted
+  (#39426 issuecomment-5319339258) + standing validation offer renewed
+  for #35601's artifacts. Net: **we are co-authors on the PR that will
+  fix #21346**; Cordis unaffected (capability gating).
+- **Validation delivered on #35601 (owner-approved)**: fetched the
+  rebased head's CI artifact (`bunx bun-pr 35601` →
+  `1.4.0-canary.1+4a755e67c`), ran the full downstream matrix —
+  **69/69** incl. the selective-reload spec — and spot-benched
+  selective reload at ~523 µs/swap (CI build). Results posted:
+  #35601 issuecomment-5319475773 ("ready to land" from downstream).
+  - Neighborhood map posted publicly (owner-approved): full version on
+    [#39426](https://github.com/oven-sh/bun/pull/39426#issuecomment-5318438990)
+    (four PRs' relationships + history + the #35345 lcov prediction),
+    trimmed version on
+    [#35601](https://github.com/oven-sh/bun/pull/35601#issuecomment-5318445162)
+    framed as downstream-shared context. The #35345 note is the
+    forward-looking piece: neither query PR mentions that landing either
+    makes the lcov re-import bug reachable via file:// cache-busting.
+- #35601 detail (original finding, owner-requested, 2026-08-17 ~19:30Z):
+  robobun's earlier PR (Jul 25) fixing the SAME bug: identical root-cause
+  diagnosis, same three sites, PLUS BunPlugin.cpp / mock.module via a
+  shared `fileSystemPathWithQuery` helper, and it also fixes #13391
+  (`bunx --bun astro dev` stale config). It is stalled/dirty (untouched
+  since Jul 26, merge conflicts vs main, mixed CI). **Our #39426 is a
+  partial duplicate, opened unknowingly** — the original recon searched
+  issues (found #21346) but never `is:pr 21346` for prior PRs. Lesson
+  recorded: run the 5-second prior-PR search before opening any fix.
+  Disclosed on both (owner-approved): [#39426
+  comment](https://github.com/oven-sh/bun/pull/39426#issuecomment-5318372531)
+  (offering to close as superseded if they revive theirs) and [#35601
+  comment](https://github.com/oven-sh/bun/pull/35601#issuecomment-5318379869)
+  (downstream validation + test-matrix offer, to help un-stall the better
+  PR). Cordis PR #2 is unaffected: its gating is capability-based and
+  activates on whichever PR lands.
+- CodeRabbit review loop closed (2026-08-17): its single actionable
+  finding (add `import.meta.resolve` coverage) was addressed by
+  `c16333e9`; a threaded reply on the finding
+  (`discussion_r3797402606`) got the bot's acknowledgment ("the added
+  coverage is sufficient — ✅ Review thread resolved", plus a recorded
+  repo learning on URL-join vs `Bun__resolveSync` routing). Note:
+  CodeRabbit **auto-updates on every push** by editing its walkthrough
+  comment in place (not via new review records) — its 17:06 auto-update
+  delta-reviewed `4fde4e56 → c16333e9` with **zero actionable
+  comments** and raised Merge Risk 🔵 Low → **⚪ Minimal**; the manual
+  `@coderabbitai review` trigger was redundant (that command is only
+  for paused auto-reviews). **Zero open bot findings**; `claude[bot]`
+  review stays disabled for fork PRs until a maintainer invokes it.
+  Remaining gate: Buildkite approval (build 100030 still `blocked`).
+
 ### Full-suite phase boundary results
 
 ```
