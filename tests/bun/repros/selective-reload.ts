@@ -1,7 +1,7 @@
 // Selective plugin reload on Bun — the Phase C primitive, enabled by
 // oven-sh/bun#39426 (a file:// URL's query is part of the module key).
 // Run with a Bun that includes the fix:
-//   ~/Developer/bun/build/release/bun tests/bun/repros/selective-reload.ts
+//   .upstream/bun/build/debug/bun-debug tests/bun/repros/selective-reload.ts
 //
 // What this proves, per line of output:
 //  - [resident] ticks continue across the reload, unduplicated  → root untouched

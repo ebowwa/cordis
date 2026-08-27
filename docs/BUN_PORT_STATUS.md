@@ -327,6 +327,13 @@ Owner-selected follow-up (upgrades a 🟡 matrix cell to ✅):
 
 ### Phase 10 — Phase C selective HMR unblocked by our own PR (DONE)
 
+[oven-sh/bun#39426](https://github.com/oven-sh/bun/pull/39426) ("keep a
+file:// URL's query in module keys", fixing
+[#21346](https://github.com/oven-sh/bun/issues/21346)) is an upstream PR
+authored from this port's upstream-contribution effort; it makes
+`import(fileURL + "?v=N")` bypass the module cache — the public-API
+primitive per-module reload needs on Bun.
+
 Owner asked "can we use it with our cordis?" — answered at three levels:
 
 1. **Drop-in compatibility**: the full Cordis suite runs green on the
@@ -358,6 +365,21 @@ done.
   this round: `BUN_QUERY_BUSTING_BIN` is `resolve()`d (the driver child
   runs from a temp cwd — a relative override path broke it; found and
   fixed during release-binary verification).
+- **Pinned & published (owner-approved)**: state tagged **`bun-39426`**
+  (annotated, on `f3ebb4e` = PR #2 head; message carries the SHA256,
+  verification evidence, rebuild path, upstream refs). Binary published
+  as a GitHub Release asset
+  (`releases/download/bun-39426/bun-39426-darwin-aarch64`, 59 MB) —
+  download round-trip verified: checksum matches
+  `57b1e6ba…bdd099e`, `--revision` reports our commit. Docs record the
+  checksum and rebuild command, so the artifact is verifiable AND
+  reproducible independent of this machine.
+- Release referenced on both Bun PRs (owner-approved): full artifact
+  note (download, checksum, usage, caveats) on
+  [#39426](https://github.com/oven-sh/bun/pull/39426#issuecomment-5318617337);
+  short validation pointer on
+  [#35601](https://github.com/oven-sh/bun/pull/35601#issuecomment-5318617517)
+  (framed as "testable binary for this direction", not our PR).
 
 ## Current failures
 
