@@ -52,6 +52,13 @@ function candidateBin(): string | undefined {
     // a sibling Bun checkout (~/Developer/bun) as fallback
     ...['build/release/bun', 'build/debug/bun-debug'].map(
       rel => join(resolve(REPO_ROOT, '../bun'), rel)),
+    // the running Bun itself, as a last-resort candidate. Stock releases do
+    // NOT carry #39426 yet (the fix rides open PR oven-sh/bun#35601), so the
+    // capability probe below still rejects them and the suite keeps its
+    // clean skip today. The moment #35601 merges and ships, stock Bun
+    // self-un-gates this spec here with zero changes to this repo — and a
+    // locally-built #35601 binary on PATH runs it before release.
+    ...(process.versions?.bun ? [process.execPath] : []),
   ]
   return candidates.find(existsSync)
 }
